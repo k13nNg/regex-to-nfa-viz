@@ -8,46 +8,58 @@ class Regex():
         pass
 
 class Concat(Regex):
+    '''The concatenation operator'''
 
     def __init__(self, left, right):
         self._left = left
         self._right = right
     
-    def get_left(self):
+    @property
+    def left(self):
         return self._left   
     
-    def get_right(self):
+    @property
+    def right(self):
         return self._right
     
     def __repr__(self):
         return f"Concat({self._left!r}, {self._right!r})"
     
 class Union(Regex):
+    '''The union operator'''
+
     def __init__(self, left: Regex, right: Regex):
         self._left = left
         self._right = right
 
-    def get_left(self):
+    @property
+    def left(self):
         return self._left   
     
-    def get_right(self):
+    @property
+    def right(self):
         return self._right
     
     def __repr__(self):
         return f"Union({self._left!r}, {self._right!r})"
 
 class Star(Regex):
+    '''The star operator'''
+
     def __init__(self, regex: Regex):
         self._regex = regex
     
     def __repr__(self):
-        return f"Star({self._child!r})"
+        return f"Star({self._regex!r})"
 
 class Literal(Regex):
+    '''The literal operator'''
+
     def __init__(self, char: str):
         self._char = char
 
-    def get_char(self):
+    @property
+    def char(self):
         return self._char
 
     def __repr__(self):
