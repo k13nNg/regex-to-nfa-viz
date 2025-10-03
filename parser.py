@@ -1,4 +1,4 @@
-from regex import Regex, Union, Concat, Literal, Star
+from regex import Regex, Union, Concat, Literal, Star, Epsilon
 
 def parse_regex(s: str) -> Regex:
     pos = 0  # shared index
@@ -50,6 +50,14 @@ def parse_regex(s: str) -> Regex:
                 raise ValueError(f"Unmatched '(' at position {pos}")
             pos += 1
             return node
+        
+        elif s[pos] == "@":
+            '''
+            Use @ instead of epsilon for empty string
+            '''
+            pos += 1
+            return Epsilon()
+        
         else:
             char = s[pos]
             pos += 1
@@ -63,4 +71,4 @@ def parse_regex(s: str) -> Regex:
     return ast
 
 if __name__ == "__main__":
-    print(parse_regex("((a|b)|(c|d))*"))
+    print(parse_regex(""))
