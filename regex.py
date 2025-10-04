@@ -25,6 +25,39 @@ class Concat(Regex):
     def right(self):
         return self._right
     
+    def to_nfa(self):
+        '''
+        return the NFA representation of the Concat operation
+        '''
+
+        # get the sub-NFA's
+        left_nfa = self._left.to_nfa()
+        right_nfa = self._right.to_nfa()
+
+        # get the transition functions of the sub-NFA's
+        left_nfa_trans_func = left_nfa.trans_func
+        right_nfa_trans_func = right_nfa.trans_func
+
+
+        # get the start and accept states
+        output_nfa_start_state = left_nfa.start_state
+        output_nfa_accept_state = right_nfa.accept_state
+
+        # obtain the output states set
+        output_nfa_states = {output_nfa_start_state, output_nfa_accept_state} | left_nfa.states | right_nfa.states
+
+        # merge the transition functions of the sub-NFA's to create the transition function of the output NFA
+        output_nfa_trans_func = left_nfa_trans_func | right_nfa_trans_func
+
+        # create output NFA
+        output_nfa = NFA(output_nfa_states, output_nfa_start_state, 
+        output_nfa_accept_state, output_nfa_trans_func)
+
+        # add the epsilon-transition from the left sub-NFA accept state to the right sub-NFA start state)
+        output_nfa.add_transition(left_nfa.accept_state, "@", right_nfa.start_state)
+
+        return output_nfa
+    
     def __repr__(self):
         return f"Concat({self._left!r}, {self._right!r})"
     
@@ -47,7 +80,7 @@ class Union(Regex):
     
     def to_nfa(self):
         '''
-        return the NFA representation the Union operation
+        return the NFA representation of the Union operation
         '''
         start_state = state_id_generator.get_new_id()
         accept_state = state_id_generator.get_new_id()
@@ -87,6 +120,35 @@ class Star(Regex):
     def __init__(self, regex: Regex):
         self._regex = regex
     
+    def to_nfa(self):
+        '''
+        return the NFA representation of the Star operation
+        '''
+
+        # get the sub-NFA
+        sub_NFA = self._regex.to_nfa()
+
+        # create new start and accept states
+        output_nfa_start_state = state_id_generator.get_new_id()
+        output_nfa_accept_state = state_id_generator.get_new_id()
+
+        # create a new states set
+        output_nfa_states = {output_nfa_start_state, output_nfa_accept_state} | sub_NFA.states
+
+        # create the transition for the output NFA
+        output_nfa_trans_func = sub_NFA.trans_func
+
+        # create the output NFA
+        output_nfa = NFA(output_nfa_states, output_nfa_start_state, output_nfa_accept_state, output_nfa_trans_func)
+
+        # add the necessary epsilon-transitions
+        output_nfa.add_transition(output_nfa_start_state, "@", output_nfa_accept_state)
+        output_nfa.add_transition(output_nfa_start_state, "@", sub_NFA.start_state)
+        output_nfa.add_transition(sub_NFA.accept_state, "@", output_nfa_accept_state)
+        output_nfa.add_transition(sub_NFA.accept_state, "@", sub_NFA.start_state)
+
+        return output_nfa
+
     def __repr__(self):
         return f"Star({self._regex!r})"
 
@@ -140,6 +202,6 @@ class Literal(Regex):
         return f"Literal({self._char!r})"
     
 if __name__ == "__main__":
-    test = Union(Union(Literal("a"), Literal("b")), Literal("c"))
+    test= Concat(Star(Literal("a")), Literal("b"))
 
     print(test.to_nfa())
