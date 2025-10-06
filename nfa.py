@@ -18,16 +18,18 @@ class NFA:
 
     Attributes:
         - states: Set[Int] : Set of all the state ids
+        - alphabet: Set[Str] : The alphabet of the NFA
         - start: Int : Id of the start state
         - accept: Int: Id of the accept state 
         - trans_func: Dict{(Int, Symbol) : Int} : Dictionary that map a pair of state id and symbol in the alphabet to another state (possible the same state)
     '''
 
-    def __init__(self, states, start, accept, trans_func = {}):
+    def __init__(self, states, alphabet, start, accept, trans_func = {}):
         '''
         initialize the NFA object 
         '''
         self._states = states
+        self._alphabet = alphabet
         self._start = start
         self._accept = accept
 
@@ -40,6 +42,13 @@ class NFA:
         '''
         return self._start
     
+    @property
+    def alphabet(self):
+        '''
+        return the alphabet of the NFA
+        '''
+        return self._alphabet
+
     @property
     def accept_state(self):
         '''
@@ -74,6 +83,32 @@ class NFA:
             self._states.add(id)
         else:
             raise ValueError("State already exists")
+
+    def get_next_state(self, curr_state, curr_char):
+        '''
+        return the set of the next state ids of curr_state, given the input curr_char. Return an empty set if there is no defined transition for curr_state on the input curr_char
+        '''
+
+        return self.trans_func.get((curr_state, curr_char), set())
+
+    def get_epsilon_closure(self, states):
+        '''
+        return the epsilon closure of states
+        '''
+
+        stack = list(states)
+        epsilon_closure = set(states)
+
+        while (len(stack) > 0):
+            state = stack.pop()
+
+            if (state is not None):
+                new_epsilon_closure = self.trans_func.get((state, "@"), set())
+                stack += list(new_epsilon_closure)
+                epsilon_closure |= new_epsilon_closure
+
+        return epsilon_closure
+
 
     def add_transition(self, src, sym, dest):
         '''
@@ -110,6 +145,50 @@ class NFA:
                 lines.append(f"  {src} --{symbol}--> {d}")
         
         return "\n".join(lines)
+
+    def match(self, test_str):
+        '''
+        return True if the NFA accepts test_str, return False otherwise
+        '''
+        start_state = self.start_state
+        curr_states = self.get_epsilon_closure({start_state})
+
+        # take into account if an empty string is accepted
+        flag = self.accept_state in curr_states
+
+        for ch in test_str:
+            
+            if not(ch in self.alphabet):
+                return False
+
+            new_states = set()
+
+            for s in curr_states:
+                new_states |= self.get_next_state(s, ch)
+
+            # curr_states = self.get_epsilon_closure(new_states)
+
+            '''
+            
+            '''
+
+            new_states |= self.get_epsilon_closure(new_states)
+            
+            # the NFA accepts this character => reset the "pointer" to the starting state
+            if (self.accept_state in new_states):
+                curr_states = self.get_epsilon_closure({start_state})
+                flag = True
+            
+            # the NFA doesn't accept this character. However, there's still a chance that the next character will result in an accept state, so update curr_states
+            else:
+                curr_states = new_states
+                flag = False
+
+        # return self.accept_state in curr_states
+        return flag
+
+
+
 
 
         

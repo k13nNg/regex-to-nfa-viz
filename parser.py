@@ -69,6 +69,3 @@ def parse_regex(s: str) -> Regex:
         raise ValueError(f"Unexpected trailing input at position {pos}")
     
     return ast
-
-if __name__ == "__main__":
-    print(parse_regex(""))

@@ -34,10 +34,12 @@ class Concat(Regex):
         left_nfa = self._left.to_nfa()
         right_nfa = self._right.to_nfa()
 
+        # merge the sub-NFA's alphabets top create the alphabet for the new NFA
+        output_nfa_alphabet = left_nfa.alphabet | right_nfa.alphabet
+
         # get the transition functions of the sub-NFA's
         left_nfa_trans_func = left_nfa.trans_func
         right_nfa_trans_func = right_nfa.trans_func
-
 
         # get the start and accept states
         output_nfa_start_state = left_nfa.start_state
@@ -50,7 +52,7 @@ class Concat(Regex):
         output_nfa_trans_func = left_nfa_trans_func | right_nfa_trans_func
 
         # create output NFA
-        output_nfa = NFA(output_nfa_states, output_nfa_start_state, 
+        output_nfa = NFA(output_nfa_states, output_nfa_alphabet, output_nfa_start_state, 
         output_nfa_accept_state, output_nfa_trans_func)
 
         # add the epsilon-transition from the left sub-NFA accept state to the right sub-NFA start state)
@@ -94,10 +96,13 @@ class Union(Regex):
         # merge the sub-NFA's states and {start_state, accept_state} to create a new list of the states of NFA
         output_states = {start_state, accept_state} | left_nfa.states | right_nfa.states
 
+        # merge the sub-NFA's alphabets top create the alphabet for the new NFA
+        output_nfa_alphabet = left_nfa.alphabet | right_nfa.alphabet
+
         # merge the sub-NFA's transition function to create a new NFA
         output_nfa_trans_func = left_nfa_trans_func | right_nfa_trans_func
 
-        output_nfa = NFA(output_states, start_state, accept_state, output_nfa_trans_func)
+        output_nfa = NFA(output_states, output_nfa_alphabet, start_state, accept_state, output_nfa_trans_func)
 
         # add epsilon transition from output_nfa start state to the start states of left_nfa and right_nfa
         output_nfa.add_transition(start_state, "@", left_nfa.start_state)
@@ -132,6 +137,9 @@ class Star(Regex):
         output_nfa_start_state = state_id_generator.get_new_id()
         output_nfa_accept_state = state_id_generator.get_new_id()
 
+        # the new nfa's alphabet will be the same as the sub-NFA's alphabet
+        output_nfa_alphabet = sub_NFA.alphabet
+
         # create a new states set
         output_nfa_states = {output_nfa_start_state, output_nfa_accept_state} | sub_NFA.states
 
@@ -139,7 +147,7 @@ class Star(Regex):
         output_nfa_trans_func = sub_NFA.trans_func
 
         # create the output NFA
-        output_nfa = NFA(output_nfa_states, output_nfa_start_state, output_nfa_accept_state, output_nfa_trans_func)
+        output_nfa = NFA(output_nfa_states, output_nfa_alphabet, output_nfa_start_state, output_nfa_accept_state, output_nfa_trans_func)
 
         # add the necessary epsilon-transitions
         output_nfa.add_transition(output_nfa_start_state, "@", output_nfa_accept_state)
@@ -160,7 +168,7 @@ class Epsilon(Regex):
         start_state = state_id_generator.get_new_id()
         accept_state = state_id_generator.get_new_id()
 
-        output_nfa = NFA({start_state, accept_state}, start_state, accept_state)
+        output_nfa = NFA({start_state, accept_state}, set(), start_state, accept_state)
 
         return output_nfa
 
@@ -192,7 +200,7 @@ class Literal(Regex):
         start_state = state_id_generator.get_new_id()
         accept_state = state_id_generator.get_new_id()
 
-        output_nfa = NFA({start_state, accept_state}, start_state, accept_state, {})
+        output_nfa = NFA({start_state, accept_state}, {self.char}, start_state, accept_state, {})
 
         output_nfa.add_transition(start_state, self._char, accept_state)
 
