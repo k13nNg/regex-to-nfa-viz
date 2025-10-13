@@ -153,40 +153,25 @@ class NFA:
         start_state = self.start_state
         curr_states = self.get_epsilon_closure({start_state})
 
-        # take into account if an empty string is accepted
-        flag = self.accept_state in curr_states
-
         for ch in test_str:
-            
-            if not(ch in self.alphabet):
+            # optional: fail-fast if char not in alphabet
+            if ch not in self.alphabet:
                 return False
 
-            new_states = set()
-
+            # compute states reachable by consuming ch
+            next_states = set()
             for s in curr_states:
-                new_states |= self.get_next_state(s, ch)
+                next_states |= self.get_next_state(s, ch)
 
-            # curr_states = self.get_epsilon_closure(new_states)
+            # if no next states, reject
+            if not next_states:
+                return False
 
-            '''
-            
-            '''
+            # now take epsilon-closure of those destinations only
+            curr_states = self.get_epsilon_closure(next_states)
 
-            new_states |= self.get_epsilon_closure(new_states)
-            
-            # the NFA accepts this character => reset the "pointer" to the starting state
-            if (self.accept_state in new_states):
-                curr_states = self.get_epsilon_closure({start_state})
-                flag = True
-            
-            # the NFA doesn't accept this character. However, there's still a chance that the next character will result in an accept state, so update curr_states
-            else:
-                curr_states = new_states
-                flag = False
-
-        # return self.accept_state in curr_states
-        return flag
-
+        # accept only if accept state is in the final closure
+        return self.accept_state in curr_states
 
 
 
