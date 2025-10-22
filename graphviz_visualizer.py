@@ -1,12 +1,12 @@
 from graphviz import Digraph
 import parser
 
-regex = "(a|bc)*"
+regex = "(a|b)*(bc|ab)(dasf|bfaskd)*"
 
 nfa = parser.parse_regex(regex).to_nfa()
 
 
-def visualize_nfa_graphviz(nfa, filename="nfa.gv"):
+def visualize_nfa_graphviz(nfa, filename="nfa_gv"):
     """
     Visualize an NFA (Thompson's construction style) using Graphviz.
     Generates a clean left-to-right layout.
@@ -26,9 +26,9 @@ def visualize_nfa_graphviz(nfa, filename="nfa.gv"):
     # Add transitions
     for (src, symbol), dests in nfa._trans_func.items():
         for dest in dests:
-            label = "ε" if symbol == "@" else symbol
+            # label = "ε" if symbol == "@" else symbol
             style = "dashed" if symbol == "@" else "solid"
-            dot.edge(str(src), str(dest), label=label, style=style)
+            dot.edge(str(src), str(dest), label=symbol, style=style)
 
     dot.render(filename, view=True)
     print(f"✅ NFA visualization generated: {filename}.png")

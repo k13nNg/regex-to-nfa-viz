@@ -103,7 +103,7 @@ class NFA:
             state = stack.pop()
 
             if (state is not None):
-                new_epsilon_closure = self.trans_func.get((state, "@"), set())
+                new_epsilon_closure = self.trans_func.get((state, "ε"), set())
                 stack += list(new_epsilon_closure)
                 epsilon_closure |= new_epsilon_closure
 
@@ -176,4 +176,4 @@ class NFA:
 
 
 
-        
+            

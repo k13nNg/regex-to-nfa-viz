@@ -56,7 +56,7 @@ class Concat(Regex):
         output_nfa_accept_state, output_nfa_trans_func)
 
         # add the epsilon-transition from the left sub-NFA accept state to the right sub-NFA start state)
-        output_nfa.add_transition(left_nfa.accept_state, "@", right_nfa.start_state)
+        output_nfa.add_transition(left_nfa.accept_state, "ε", right_nfa.start_state)
 
         return output_nfa
     
@@ -105,14 +105,14 @@ class Union(Regex):
         output_nfa = NFA(output_states, output_nfa_alphabet, start_state, accept_state, output_nfa_trans_func)
 
         # add epsilon transition from output_nfa start state to the start states of left_nfa and right_nfa
-        output_nfa.add_transition(start_state, "@", left_nfa.start_state)
-        output_nfa.add_transition(start_state, "@", right_nfa.start_state)
+        output_nfa.add_transition(start_state, "ε", left_nfa.start_state)
+        output_nfa.add_transition(start_state, "ε", right_nfa.start_state)
 
         # add epsilon transition from end states of left_nfa and right_nfa to the end state of output_nfa
 
         # Note: we know that any NFA constructed by Thompson's Rule will have exactly 1 start state and 1 accept state
-        output_nfa.add_transition(left_nfa.accept_state, "@", accept_state)
-        output_nfa.add_transition(right_nfa.accept_state, "@", accept_state)
+        output_nfa.add_transition(left_nfa.accept_state, "ε", accept_state)
+        output_nfa.add_transition(right_nfa.accept_state, "ε", accept_state)
 
         return output_nfa
 
@@ -150,10 +150,10 @@ class Star(Regex):
         output_nfa = NFA(output_nfa_states, output_nfa_alphabet, output_nfa_start_state, output_nfa_accept_state, output_nfa_trans_func)
 
         # add the necessary epsilon-transitions
-        output_nfa.add_transition(output_nfa_start_state, "@", output_nfa_accept_state)
-        output_nfa.add_transition(output_nfa_start_state, "@", sub_NFA.start_state)
-        output_nfa.add_transition(sub_NFA.accept_state, "@", output_nfa_accept_state)
-        output_nfa.add_transition(sub_NFA.accept_state, "@", sub_NFA.start_state)
+        output_nfa.add_transition(output_nfa_start_state, "ε", output_nfa_accept_state)
+        output_nfa.add_transition(output_nfa_start_state, "ε", sub_NFA.start_state)
+        output_nfa.add_transition(sub_NFA.accept_state, "ε", output_nfa_accept_state)
+        output_nfa.add_transition(sub_NFA.accept_state, "ε", sub_NFA.start_state)
 
         return output_nfa
 
