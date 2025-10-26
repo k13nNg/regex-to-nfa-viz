@@ -1,5 +1,5 @@
 from parser import parse_regex
-from dash import Dash, html, dcc, Input, Output, MATCH, State, callback_context as ctx, no_update
+from dash import Dash, html, dcc, Input, Output, State, callback_context as ctx, no_update
 import graphviz
 import dash_cytoscape as cyto
 from nfa import global_id_gen
