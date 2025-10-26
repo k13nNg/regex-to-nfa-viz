@@ -188,7 +188,6 @@ class NFA:
         yield curr_states.copy()
 
         for ch in test_str:
-            print(ch)
             if ch not in self.alphabet:
                 yield set()  # empty = dead
                 return

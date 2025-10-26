@@ -1,5 +1,5 @@
 from parser import parse_regex
-from dash import Dash, html, dcc, Input, Output, State, callback_context as ctx, no_update
+from dash import Dash, html, dcc, Input, Output, MATCH, State, callback_context as ctx, no_update
 import graphviz
 import dash_cytoscape as cyto
 from nfa import global_id_gen
@@ -131,18 +131,18 @@ def nfa_to_cytoscape_elems(nfa):
     else:
         return []
     
-def get_active_states(nfa, ch):
-    curr_states = nfa.get_epsilon_closure({nfa.start_state})
-
+def get_active_states(nfa, ch, prev_states):
+    # curr_states = nfa.get_epsilon_closure({nfa.start_state})
+    curr_states = nfa.get_epsilon_closure(prev_states)
+    
+    # compute states reachable by consuming ch
+    next_states = set()
     for s in curr_states:
         next_states |= nfa.get_next_state(s, ch)
 
-    curr_states = nfa.get_epsilon_closure(next_states)
-
-    return (ch, list(curr_states))
-
-
-
+    new_active_states = nfa.get_epsilon_closure(next_states)
+    # print(f"{ch}: {new_active_states}")
+    return (ch, new_active_states)
 
 '''
 ---------------------
@@ -198,40 +198,10 @@ app.layout = html.Div([
 
     html.Div([
         html.Div([
-            html.H2("Regex:"),
-            dcc.Input(id="input-regex", 
-                    type = "text", 
-                    placeholder = 'Enter regex', 
-                    style={
-                            "fontFamily": "Courier New, monospace",
-                            "fontSize": "20px",
-                            "fontWeight": "bold",
-                            "color": "#2c3e50",
-                            'textAlign': 'center'
-                        }),
-            html.Button(
-                'Generate NFA', 
-                id='generate-nfa-button', 
-                n_clicks=0,
-                style={'margin': '10px', 'padding': '10px'}
-            ), 
-        ], style={
-            'display': 'flex',
-            'alignItems': 'center',  
-            'marginBottom': '20px',
-            'gap':'10px',
-            'width': '550px'
-
-        }),
-    ], style = {
-        'margin': '0 auto',
-        'marginBottom': '20px',
-        'width': '100%'
-    }),
-    html.Div([
-        dcc.Input(id="input-string", 
+            html.Div([
+                dcc.Input(id="input-regex", 
                         type = "text", 
-                        placeholder = 'Enter test string', 
+                        placeholder = 'Enter regex', 
                         style={
                                 "fontFamily": "Courier New, monospace",
                                 "fontSize": "20px",
@@ -239,19 +209,49 @@ app.layout = html.Div([
                                 "color": "#2c3e50",
                                 'textAlign': 'center'
                             }),
+                html.Button(
+                    'Generate NFA', 
+                    id='generate-nfa-button', 
+                    n_clicks=0,
+                    style={'margin': '10px', 'padding': '10px'}
+                ), 
+            ]),
+
+
+            html.Div([
+                dcc.Input(id="input-string", 
+                                type = "text", 
+                                placeholder = 'Enter test string', 
+                                style={
+                                        "fontFamily": "Courier New, monospace",
+                                        "fontSize": "20px",
+                                        "fontWeight": "bold",
+                                        "color": "#2c3e50",
+                                        'textAlign': 'center'
+                                    }),
+                html.Button(
+                        'Step', 
+                        id='trace-nfa-button', 
+                        n_clicks=0,
+                        style={'margin': '10px', 'padding': '10px'}
+                    ),
+            ]),
+        ], style={
+            'alignItem': 'start'
+        }),
         html.Button(
-                'Trace NFA', 
-                id='trace-nfa-button', 
-                n_clicks=0,
-                style={'margin': '10px', 'padding': '10px'}
-            ),
-    ]),
-    html.Button(
             'Reset View', 
             id='reset-button', 
             n_clicks=0,
             style={'margin': '10px', 'padding': '10px'}
-    ),            
+        ),            
+    ], style={
+        'display': 'flex',
+        'flexDirection': 'column',
+        'alignItems': 'center'
+    }),
+
+    
 
     html.Div(id='test-string-output',
              style={
@@ -265,125 +265,200 @@ app.layout = html.Div([
     cyto.Cytoscape(
         id = 'NFA-graph',
         layout={'name': 'preset', 'spacingFactor': 2.0, 'avoidOverlap': True},
-        style={'width': '100%', 'height': '600px'},
+        style={'width': '100%', 'height': '400px'},
         elements = nfa_to_cytoscape_elems(test_nfa),
         stylesheet=stylesheet
-    ),
-   
-    
+    ),  
+    html.Div(id='acceptance-output',
+            style={
+            "fontFamily": "Courier New, monospace",
+            "fontSize": "32px",
+            "fontWeight": "bold",
+            "color": "#2c3e50",
+            'textAlign': 'center'
+        }),
+    dcc.Store(id='str-idx'),
+    dcc.Store(id='nfa-curr-states'),
+    dcc.Store(id='test-string-acceptance'),
+
 ])
 
-# @app.callback(
-#     Output('NFA-graph', 'layout'),
-#     Output('NFA-graph', 'elements'),
-#     Output(component_id='test-string-output', component_property='children'),
-#     Input('reset-button', 'n_clicks'),
-#     Input('generate-nfa-button', 'n_clicks'),
-#     Input('trace-nfa-button', 'n_clicks'),
-#     Input(component_id='input-string', component_property='value'),
-#     Input(component_id='input-regex', component_property='value'),
-#     State('NFA-graph', 'elements')
-# )
 
-# def handle_callback(reset_clicks, generate_clicks, trace_clicks, input_value, input_regex, current_elements):
-#     """Resets the Cytoscape view to fit all elements."""
-
-#     cyto_nfa_elems = []
-#     try:
-#         # test if the regex is valid first 
-#         parse_regex(input_regex)
-
-#         if ('generate-nfa-button' == ctx.triggered_id):
-#             global_id_gen.reset_id()
-#             test_nfa = parse_regex(input_regex).to_nfa()
-#             cyto_nfa_elems = nfa_to_cytoscape_elems(test_nfa)
-
-#         # Check if the button has been clicked at least once
-#         if reset_clicks > 0:
-#             # Return the layout dictionary with 'fit': True
-#             return {
-#                 'name': 'preset',
-#                 'fit': True,
-#                 'animate': True,
-#                 'animationDuration': 500,
-#                 'reset_trigger': reset_clicks
-#             }, current_elements, f'{input_value}'
-        
-#     except Exception:
-#         test_nfa = None
-    
-#     return {'name': 'preset'},\
-#             cyto_nfa_elems,\
-#             f'{input_value}'
 
 @app.callback(
     Output('NFA-graph', 'layout'),
+    Output('NFA-graph', 'stylesheet'),
     Output('NFA-graph', 'elements'),
     Output(component_id='test-string-output', component_property='children'),
+    Output(component_id='acceptance-output', component_property='children'),
+    Output('str-idx', 'data'),
+    Output('nfa-curr-states', 'data'),
+    Output('test-string-acceptance', 'data'),
+
     Input('reset-button', 'n_clicks'),
     Input('generate-nfa-button', 'n_clicks'),
     Input('trace-nfa-button', 'n_clicks'),
-    Input(component_id='input-string', component_property='value'),
-    Input(component_id='input-regex', component_property='value'),
-    State('NFA-graph', 'elements')
+
+    State(component_id='input-string', component_property='value'),
+    State(component_id='input-regex', component_property='value'),
+    State('NFA-graph', 'elements'),
+    State('str-idx', 'data'),
+    State('nfa-curr-states', 'data'),
+    State('test-string-acceptance', 'data'),
 )
-def handle_callback(reset_clicks, generate_clicks, trace_clicks, input_value, input_regex, current_elements):
+def handle_callback(reset_clicks, 
+                    generate_clicks, 
+                    trace_clicks, 
+                    input_value, 
+                    input_regex,
+                    current_elements, 
+                    str_idx,
+                    nfa_curr_states,
+                    test_string_acceptance):
     
+    global test_nfa
+
+
     # 1. Identify Trigger
     trigger_id = ctx.triggered_id
     default_layout = {'name': 'preset'}
-    
+    str_idx = str_idx or {'idx': 0}
+    input_value = input_value or ''
+
+    nfa_curr_states = nfa_curr_states or {'curr_states': set()}
+    test_string_acceptance = test_string_acceptance or False
+
     # --- A. Reset Button Trigger ---
-    if trigger_id == 'reset-button' and reset_clicks > 0:
+    if trigger_id == 'reset-button':
         return (
             {
                 'name': 'preset', 'fit': True, 'animate': True, 'animationDuration': 500,
                 'reset_trigger': reset_clicks, 
             },
+            stylesheet,
             current_elements, # Keep the graph elements exactly as they are
-            no_update         # Don't touch the test string output
+            no_update,         # Don't touch the test string output
+            f"Accepted?: {test_string_acceptance}",
+            str_idx,
+            no_update,
+            no_update
         )
 
     # --- B. NFA Generation Trigger ---
     elif trigger_id == 'generate-nfa-button':
         try:
+
             # Re-calculate and generate new elements
             global_id_gen.reset_id()
             test_nfa = parse_regex(input_regex).to_nfa()
             cyto_nfa_elems = nfa_to_cytoscape_elems(test_nfa)
-            
+
+            nfa_curr_states['curr_states'] = [test_nfa.start_state]
+
             # Return new elements, default layout, and updated test string value
-            return default_layout, cyto_nfa_elems, f'{input_value}'
+            return (default_layout, 
+                    stylesheet, 
+                    cyto_nfa_elems, 
+                    f'{input_value}',
+                    f"Accepted?: {test_string_acceptance}",
+                    str_idx,
+                    nfa_curr_states,
+                    no_update)
             
         except Exception as e:
             # Handle error during generation
-            # print(f"Regex Error: {e}")
-            return default_layout, [], f"Error: Invalid Regex!"
-
-    # --- C. Trace Button Trigger (If implemented) ---
+            return (default_layout, 
+                    stylesheet, 
+                    [], 
+                    f"Error: Invalid Regex! {str(e)}", 
+                    f"Accepted?: {None}", 
+                    no_update,
+                    no_update
+                    )
+    # --- C. Trace Button Trigger ---
     elif trigger_id == 'trace-nfa-button':
-        # Assuming tracing updates the elements (e.g., highlights nodes)
-        # You'll need logic here to process current_elements and input_value
 
-        new_layout = {
+        if (len(current_elements) != 0 and 
+            input_value):
 
-        }
+            if (str_idx['idx'] >= len(input_value)):
+                str_idx['idx'] = 0
+                nfa_curr_states['curr_states'] = [test_nfa.start_state]
 
-        # Example: update elements for tracing logic
-        # traced_elements = trace_nfa_elements(current_elements, input_value)
-        # return no_update, traced_elements, f'Tracing: {input_value}'
-        
-        # For now, just pass through elements while updating the string display:
-        return no_update, current_elements, f'{input_value}'
+            active_states = get_active_states(test_nfa, input_value[str_idx['idx']], set(nfa_curr_states['curr_states']))
+            
+            if (len(active_states[1]) > 0):
+                if not(test_nfa.accept_state in set(nfa_curr_states['curr_states'])):
+                    dynamic_stylesheet = stylesheet + [
+                        {'selector': f'node[id="{s}"]', 'style': {'background-color': '#e74c3c'}}
+                        for s in (active_states[1] | test_nfa.get_epsilon_closure({test_nfa.start_state}) | set(nfa_curr_states['curr_states']))
+                    ]
+                else:
+                    dynamic_stylesheet = stylesheet + [
+                        {'selector': f'node[id="{s}"]', 'style': {'background-color': '#e74c3c'}}
+                        for s in (active_states[1] | test_nfa.get_epsilon_closure({test_nfa.start_state}))
+                    ]
+                    
+            else:
+                dynamic_stylesheet = stylesheet
+
+            nfa_curr_states['curr_states'] = list(active_states[1])
+
+            string_display_children = []
+            test_string_acceptance = test_nfa.match(input_value)
+            
+            for i, char in enumerate(input_value):
+                # Check if the current character index (i) matches the index (str_idx) being simulated
+                if i == str_idx['idx']:
+                    # Apply specific style to the currently simulated character
+                    styled_char = html.Span(
+                        char, 
+                        style={
+                            'textDecoration': 'underline !important', # <-- Add !important
+                            'fontWeight': 'bold !important',         # <-- Add !important
+                            'fontSize': '1.2em',                     
+                            'color': '#c0392b'
+                        }
+                    )
+                else:
+                    # Use a standard span for all other characters
+                    styled_char = html.Span(char)
+                
+                string_display_children.append(styled_char)
+            
+            str_idx['idx'] += 1
+
+            return (no_update, 
+                    dynamic_stylesheet, 
+                    current_elements, 
+                    string_display_children,
+                    f"Accepted? {test_string_acceptance}",
+                    str_idx,
+                    nfa_curr_states,
+                    test_string_acceptance)
+        else:
+            return (no_update, 
+                    stylesheet, 
+                    current_elements, 
+                    f'Please generate the NFA first!',
+                    no_update,
+                    str_idx,
+                    no_update,
+                    no_update)
 
     # --- D. Default/Input String Trigger (input-string or initial load) ---
     else:
         # If any other input (like input-string or input-regex while not generating) 
         # triggers the callback, we must return the current state of the graph.
         return (
-            no_update,           
-            current_elements,    
-            f'{input_value}'
+            no_update, 
+            stylesheet,          
+            current_elements, 
+            f'{input_value}',
+            f"Accepted? {test_string_acceptance}",
+            str_idx,
+            no_update,
+            no_update
         )
 
 if __name__ == "__main__":
