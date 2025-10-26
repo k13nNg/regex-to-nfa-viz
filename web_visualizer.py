@@ -491,4 +491,4 @@ def handle_callback(reset_clicks,
         )
 
 if __name__ == "__main__":
-    app.run(debug=True) 
+        app.run(debug=True) 
