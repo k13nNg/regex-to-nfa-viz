@@ -5,10 +5,16 @@ class StateIDGenerator:
     '''
     def __init__(self):
         self._id = 0
+
     def get_new_id(self):
         self._id += 1
 
         return self._id
+    
+    def reset_id(self):
+        self._id = 0
+
+global_id_gen = StateIDGenerator()
     
 class NFA: 
     '''
@@ -21,10 +27,10 @@ class NFA:
         - alphabet: Set[Str] : The alphabet of the NFA
         - start: Int : Id of the start state
         - accept: Int: Id of the accept state 
-        - trans_func: Dict{(Int, Symbol) : Int} : Dictionary that map a pair of state id and symbol in the alphabet to another state (possible the same state)
+        - trans_func: Dict{(Int, Symbol) : Set[Int]} : Dictionary that map a pair of state id and symbol in the alphabet to another state (possible the same state)
     '''
 
-    def __init__(self, states, alphabet, start, accept, trans_func = {}):
+    def __init__(self, states={}, alphabet={}, start=0, accept=0, trans_func = {}):
         '''
         initialize the NFA object 
         '''
@@ -174,6 +180,24 @@ class NFA:
         return self.accept_state in curr_states
 
 
+    def trace_match(self, test_str):
+        """
+        Generator that yields the set of active states after each character is processed.
+        """
+        curr_states = self.get_epsilon_closure({self.start_state})
+        yield curr_states.copy()
 
+        for ch in test_str:
+            print(ch)
+            if ch not in self.alphabet:
+                yield set()  # empty = dead
+                return
+
+            next_states = set()
+            for s in curr_states:
+                next_states |= self.get_next_state(s, ch)
+
+            curr_states = self.get_epsilon_closure(next_states)
+            yield curr_states.copy()
 
             

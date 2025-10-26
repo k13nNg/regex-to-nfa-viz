@@ -1,7 +1,7 @@
-from abc import ABC, abstractmethod
-from nfa import NFA, StateIDGenerator
+from abc import abstractmethod
+from nfa import NFA, global_id_gen
 
-state_id_generator = StateIDGenerator()
+# global_id_gen = StateIDGenerator()
 
 class Regex():
     def __init__(self):
@@ -84,8 +84,8 @@ class Union(Regex):
         '''
         return the NFA representation of the Union operation
         '''
-        start_state = state_id_generator.get_new_id()
-        accept_state = state_id_generator.get_new_id()
+        start_state = global_id_gen.get_new_id()
+        accept_state = global_id_gen.get_new_id()
         
         left_nfa = self._left.to_nfa()
         right_nfa = self._right.to_nfa()
@@ -134,8 +134,8 @@ class Star(Regex):
         sub_NFA = self._regex.to_nfa()
 
         # create new start and accept states
-        output_nfa_start_state = state_id_generator.get_new_id()
-        output_nfa_accept_state = state_id_generator.get_new_id()
+        output_nfa_start_state = global_id_gen.get_new_id()
+        output_nfa_accept_state = global_id_gen.get_new_id()
 
         # the new nfa's alphabet will be the same as the sub-NFA's alphabet
         output_nfa_alphabet = sub_NFA.alphabet
@@ -165,8 +165,8 @@ class Epsilon(Regex):
         '''
         construct the NFA for an empty string according to Thompson's rule
         '''
-        start_state = state_id_generator.get_new_id()
-        accept_state = state_id_generator.get_new_id()
+        start_state = global_id_gen.get_new_id()
+        accept_state = global_id_gen.get_new_id()
 
         output_nfa = NFA({start_state, accept_state}, set(), start_state, accept_state)
 
@@ -197,8 +197,8 @@ class Literal(Regex):
         construct the NFA for a single literal according to Thompson's rule
         '''
 
-        start_state = state_id_generator.get_new_id()
-        accept_state = state_id_generator.get_new_id()
+        start_state = global_id_gen.get_new_id()
+        accept_state = global_id_gen.get_new_id()
 
         output_nfa = NFA({start_state, accept_state}, {self.char}, start_state, accept_state, {})
 
@@ -209,7 +209,7 @@ class Literal(Regex):
     def __repr__(self):
         return f"Literal({self._char!r})"
     
-if __name__ == "__main__":
-    test= Concat(Star(Literal("a")), Literal("b"))
+# if __name__ == "__main__":
+#     test= Concat(Star(Literal("a")), Literal("b"))
 
-    print(test.to_nfa())
+#     print(test.to_nfa())
