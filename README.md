@@ -1,7 +1,7 @@
 # 🎯 Regular Expression to NFA Visualizer
 A web-based interactive tool that parses regular expressions (via Thompson’s Construction) and visualizes their equivalent NFAs (Nondeterministic Finite Automata) step-by-step.
 
-Built with Dash, Cytoscape.js, and Graphviz, this project bridges theory and visualization for formal language enthusiasts and students.
+Built with **Dash**, **Cytoscape.js**, and **Graphviz**, this project bridges theory and visualization for formal language enthusiasts and students.
 
 # 🚀 Features:
 - Regex Parser — Parses valid regular expressions and handles | (union), * (Kleene star), and concatenation operators.
