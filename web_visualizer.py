@@ -194,7 +194,7 @@ stylesheet = [
 app = Dash(__name__)
 
 app.layout = html.Div([
-    html.H1("Regex to NFA Tracer", style={'textAlign': 'center'}),
+    html.H1("Regex to NFA Visualizer", style={'textAlign': 'center'}),
 
     html.Div([
         html.Div([
