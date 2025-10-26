@@ -47,7 +47,7 @@ Built with Dash, Cytoscape.js, and Graphviz, this project bridges theory and vis
 
 1. Clone this repository
 ```
-git clone git@github.com:k13nNg/regex-engine.git
+git clone git@github.com:k13nNg/regex-to-nfa-viz.git
 cd regex-to-nfa-viz
 ```
 
