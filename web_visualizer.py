@@ -240,7 +240,7 @@ app.layout = html.Div([
             'alignItem': 'start'
         }),
         html.Button(
-            'Reset View', 
+            'Reset View (Zoom & Pan)', 
             id='reset-button', 
             n_clicks=0,
             style={'margin': '10px', 'padding': '10px'}
@@ -294,6 +294,8 @@ app.layout = html.Div([
     Output('str-idx', 'data'),
     Output('nfa-curr-states', 'data'),
     Output('test-string-acceptance', 'data'),
+    Output(component_id='input-string', component_property='value'),
+
 
     Input('reset-button', 'n_clicks'),
     Input('generate-nfa-button', 'n_clicks'),
@@ -309,7 +311,7 @@ app.layout = html.Div([
 def handle_callback(reset_clicks, 
                     generate_clicks, 
                     trace_clicks, 
-                    input_value, 
+                    input_test_string, 
                     input_regex,
                     current_elements, 
                     str_idx,
@@ -318,12 +320,11 @@ def handle_callback(reset_clicks,
     
     global test_nfa
 
-
     # 1. Identify Trigger
     trigger_id = ctx.triggered_id
     default_layout = {'name': 'preset'}
     str_idx = str_idx or {'idx': 0}
-    input_value = input_value or ''
+    input_test_string = input_test_string or ''
 
     nfa_curr_states = nfa_curr_states or {'curr_states': set()}
     test_string_acceptance = test_string_acceptance or False
@@ -335,11 +336,12 @@ def handle_callback(reset_clicks,
                 'name': 'preset', 'fit': True, 'animate': True, 'animationDuration': 500,
                 'reset_trigger': reset_clicks, 
             },
-            stylesheet,
-            current_elements, # Keep the graph elements exactly as they are
-            no_update,         # Don't touch the test string output
-            f"Accepted?: {test_string_acceptance}",
+            no_update,
+            no_update, 
+            no_update,
+            f"Accepted? {test_string_acceptance}",
             str_idx,
+            no_update,
             no_update,
             no_update
         )
@@ -359,11 +361,12 @@ def handle_callback(reset_clicks,
             return (default_layout, 
                     stylesheet, 
                     cyto_nfa_elems, 
-                    f'{input_value}',
-                    f"Accepted?: {test_string_acceptance}",
-                    str_idx,
+                    '',
+                    f"Accepted? {test_string_acceptance}",
+                    None,
                     nfa_curr_states,
-                    no_update)
+                    no_update,
+                    '')
             
         except Exception as e:
             # Handle error during generation
@@ -371,71 +374,95 @@ def handle_callback(reset_clicks,
                     stylesheet, 
                     [], 
                     f"Error: Invalid Regex! {str(e)}", 
-                    f"Accepted?: {None}", 
+                    f"Accepted? {None}", 
+                    no_update,
                     no_update,
                     no_update
                     )
+        
     # --- C. Trace Button Trigger ---
     elif trigger_id == 'trace-nfa-button':
 
-        if (len(current_elements) != 0 and 
-            input_value):
+        if (len(current_elements) != 0):
 
-            if (str_idx['idx'] >= len(input_value)):
-                str_idx['idx'] = 0
-                nfa_curr_states['curr_states'] = [test_nfa.start_state]
+            if(len(input_test_string) > 0):
+                if (str_idx['idx'] >= len(input_test_string)):
+                    str_idx['idx'] = 0
+                    nfa_curr_states['curr_states'] = [test_nfa.start_state]
 
-            active_states = get_active_states(test_nfa, input_value[str_idx['idx']], set(nfa_curr_states['curr_states']))
-            
-            if (len(active_states[1]) > 0):
-                if not(test_nfa.accept_state in set(nfa_curr_states['curr_states'])):
-                    dynamic_stylesheet = stylesheet + [
-                        {'selector': f'node[id="{s}"]', 'style': {'background-color': '#e74c3c'}}
-                        for s in (active_states[1] | test_nfa.get_epsilon_closure({test_nfa.start_state}) | set(nfa_curr_states['curr_states']))
-                    ]
+                active_states = get_active_states(test_nfa, input_test_string[str_idx['idx']], set(nfa_curr_states['curr_states']))
+
+                if (len(active_states[1]) > 0):
+                    if not(test_nfa.accept_state in (nfa_curr_states['curr_states'])):
+                        dynamic_stylesheet = stylesheet + [
+                            {'selector': f'node[id="{s}"]', 'style': {'background-color': '#e74c3c'}}
+                            for s in (active_states[1] | test_nfa.get_epsilon_closure({test_nfa.start_state}) | set(nfa_curr_states['curr_states']))
+                        ]
+                        nfa_curr_states['curr_states'] = list(active_states[1])
+
+                    else:
+                        dynamic_stylesheet = stylesheet + [
+                            {'selector': f'node[id="{s}"]', 'style': {'background-color': '#e74c3c'}}
+                            for s in (active_states[1] | test_nfa.get_epsilon_closure({test_nfa.start_state}))
+                        ]
+                        nfa_curr_states['curr_states'] = list(active_states[1])
+
+                        
                 else:
-                    dynamic_stylesheet = stylesheet + [
-                        {'selector': f'node[id="{s}"]', 'style': {'background-color': '#e74c3c'}}
-                        for s in (active_states[1] | test_nfa.get_epsilon_closure({test_nfa.start_state}))
-                    ]
-                    
-            else:
-                dynamic_stylesheet = stylesheet
+                    dynamic_stylesheet = stylesheet
 
-            nfa_curr_states['curr_states'] = list(active_states[1])
+                    nfa_curr_states['curr_states'] = list(active_states[1])
 
-            string_display_children = []
-            test_string_acceptance = test_nfa.match(input_value)
-            
-            for i, char in enumerate(input_value):
-                # Check if the current character index (i) matches the index (str_idx) being simulated
-                if i == str_idx['idx']:
-                    # Apply specific style to the currently simulated character
-                    styled_char = html.Span(
-                        char, 
-                        style={
-                            'textDecoration': 'underline !important', # <-- Add !important
-                            'fontWeight': 'bold !important',         # <-- Add !important
-                            'fontSize': '1.2em',                     
-                            'color': '#c0392b'
-                        }
-                    )
-                else:
-                    # Use a standard span for all other characters
-                    styled_char = html.Span(char)
+                string_display_children = []
+                test_string_acceptance = test_nfa.match(input_test_string)
                 
-                string_display_children.append(styled_char)
-            
-            str_idx['idx'] += 1
+                for i, char in enumerate(input_test_string):
+                    # Check if the current character index (i) matches the index (str_idx) being simulated
+                    if i == str_idx['idx']:
+                        # Apply specific style to the currently simulated character
+                        styled_char = html.Span(
+                            char, 
+                            style={
+                                'textDecoration': 'underline !important', # <-- Add !important
+                                'fontWeight': 'bold !important',         # <-- Add !important
+                                'fontSize': '1.2em',                     
+                                'color': '#c0392b'
+                            }
+                        )
+                    else:
+                        # Use a standard span for all other characters
+                        styled_char = html.Span(char)
+                    
+                    string_display_children.append(styled_char)
+                
+                str_idx['idx'] += 1
 
-            return (no_update, 
-                    dynamic_stylesheet, 
-                    current_elements, 
-                    string_display_children,
-                    f"Accepted? {test_string_acceptance}",
-                    str_idx,
-                    nfa_curr_states,
-                    test_string_acceptance)
+                return (no_update, 
+                        dynamic_stylesheet, 
+                        current_elements, 
+                        string_display_children,
+                        f"Accepted? {test_string_acceptance}",
+                        str_idx,
+                        nfa_curr_states,
+                        test_string_acceptance,
+                        no_update)
+
+            else:
+                dynamic_stylesheet = stylesheet + [
+                    {'selector': f'node[id="{s}"]', 'style': {'background-color': '#e74c3c'}}
+                    for s in test_nfa.get_epsilon_closure({test_nfa.start_state})
+                ]
+
+                return (no_update, 
+                        dynamic_stylesheet, 
+                        no_update, 
+                        no_update,
+                        f"Accepted? {test_nfa.match('')}",
+                        no_update,
+                        no_update,
+                        no_update,
+                        no_update)
+
         else:
             return (no_update, 
                     stylesheet, 
@@ -443,6 +470,7 @@ def handle_callback(reset_clicks,
                     f'Please generate the NFA first!',
                     no_update,
                     str_idx,
+                    no_update,
                     no_update,
                     no_update)
 
@@ -454,9 +482,10 @@ def handle_callback(reset_clicks,
             no_update, 
             stylesheet,          
             current_elements, 
-            f'{input_value}',
+            f'{input_test_string}',
             f"Accepted? {test_string_acceptance}",
             str_idx,
+            no_update,
             no_update,
             no_update
         )

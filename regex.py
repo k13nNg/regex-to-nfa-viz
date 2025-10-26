@@ -169,6 +169,7 @@ class Epsilon(Regex):
         accept_state = global_id_gen.get_new_id()
 
         output_nfa = NFA({start_state, accept_state}, set(), start_state, accept_state)
+        output_nfa.add_transition(start_state, "ε", accept_state)
 
         return output_nfa
 
